@@ -1,0 +1,2 @@
+class DenseNet:
+    pass
