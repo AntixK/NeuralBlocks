@@ -1,5 +1,5 @@
 import torch.nn as nn
-
+from torch.nn.utils.spectral_norm import spectral_norm
 
 class ConvNormPool(nn.Module):
     """
@@ -25,8 +25,12 @@ class ConvNormPool(nn.Module):
                                   stride=2,
                                   padding=3, bias=False)
 
+        self.norm_type = norm
+
         if norm == 'IN':
             self.norm = nn.InstanceNorm2d(out_channels)
+        elif norm == 'SN':
+            self.conv = spectral_norm(self.conv)
         else:
             if norm != 'BN':
                 raise UserWarning('Undefined normalization '+norm+'. Using BatchNorm instead.')
@@ -48,7 +52,10 @@ class ConvNormPool(nn.Module):
                                        stride=2, padding=1)
 
     def forward(self, input):
-        x = self.conv(input)
-        x = self.act(self.norm(x))
+        if self.norm_type == 'SN':
+            x = self.conv(input)
+        else:
+            x = self.norm(self.conv(input))
+        x = self.act(x)
         x = self.maxpool(x)
         return x
