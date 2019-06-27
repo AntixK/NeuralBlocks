@@ -11,7 +11,7 @@ class MeanSpectralNormConv2d(nn.Module):
         self.conv = spectral_norm(nn.Conv2d(in_channels, out_channels, kernel_size,
                               stride, padding, dilation, groups, bias, padding_mode))
 
-        self.bias = nn.Parameter(torch.zeros(out_channels,1,1))
+        self.bias = nn.Parameter(torch.zeros(out_channels,1))
 
     def _check_input_dim(self, input):
         if input.dim() != 4:
@@ -22,29 +22,30 @@ class MeanSpectralNormConv2d(nn.Module):
         self._check_input_dim(input)
 
         x = self.conv(input)
+        size = x.size()
         x = x.transpose(0, 1).contiguous().view(x.size(1), -1)
         if self.training:
             # Compute the mean and standard deviation
-            self.batch_mean = x.mean(1)[:, None, None]
+            self.batch_mean = x.mean(1)[:, None]
 
         x = x - self.batch_mean + self.bias
-        return x
+        return x.view(size)
 
-class MeanSpectralNormLinear(nn.Module):
+class MeanSpectralNormLinear(nn.Module): # Basically BatchNorm 1D
     def __init__(self,in_features, out_features, bias=True):
         super(MeanSpectralNormLinear, self).__init__()
 
         self.lin = spectral_norm(nn.Linear(in_features, out_features, bias))
 
-        self.bias = nn.Parameter(torch.zeros(out_features,1,1))
+        self.bias = nn.Parameter(torch.zeros(out_features))
 
     def forward(self, input):
 
         x = self.lin(input)
-        x = x.transpose(0, 1).contiguous().view(x.size(1), -1)
+
         if self.training:
             # Compute the mean and standard deviation
-            self.batch_mean = x.mean(1)[:, None, None]
+            self.batch_mean = x.mean(0)
 
         x = x - self.batch_mean + self.bias
         return x
