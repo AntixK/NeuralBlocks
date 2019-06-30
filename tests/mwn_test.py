@@ -1,6 +1,7 @@
 import torch
 from torch import nn
-from NeuralBlocks.blocks.meanweightnorm import MeanWeightNormConv2d, MeanWeightNormLinear
+from NeuralBlocks.blocks.meanweightnorm import MeanWeightNormConv2d
+from NeuralBlocks.blocks.meanweightnorm import MeanWeightNormLinear
 
 class MWNConvNet(nn.Module):
     def __init__(self, num_classes=10):

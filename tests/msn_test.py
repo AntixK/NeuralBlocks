@@ -1,6 +1,7 @@
 import torch
 from torch import nn
-from NeuralBlocks.blocks.meanspectralnorm import MeanSpectralNormConv2d, MeanSpectralNormLinear
+from NeuralBlocks.blocks.meanspectralnorm import MeanSpectralNormConv2d
+from NeuralBlocks.blocks.meanspectralnorm import MeanSpectralNormLinear
 
 class MSNConvNet(nn.Module):
     def __init__(self, num_classes=10):
