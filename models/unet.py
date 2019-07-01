@@ -1,18 +1,33 @@
 import torch
 import torch.nn as nn
-from numpy import rint
 import torch.nn.functional as F
 from NeuralBlocks.blocks.convnorm import ConvNorm
-
+from NeuralBlocks.blocks.meanspectralnorm import MeanSpectralNormConv2d
 
 class unetDown(nn.Module):
-    def __init__(self, in_channels, out_channels, norm='BN'):
+    def __init__(self, in_channels, out_channels, norm=None):
         super(unetDown, self).__init__()
-        self.layer = nn.Sequential(
-                    ConvNorm(in_channels, out_channels, norm, conv_args=(3, 1, 0, True)),
-                    nn.ReLU(inplace=True),
-                    ConvNorm(out_channels, out_channels, norm, conv_args=(3, 1, 0, True)),
-                    nn.ReLU(inplace=True))
+
+        if norm is None:
+            self.layer = nn.Sequential(
+                nn.Conv2d(in_channels, out_channels, 3, 1, 0),
+                nn.ReLU(inplace=True),
+                nn.Conv2d(out_channels, out_channels, 3, 1, 0),
+                nn.ReLU(inplace=True))
+        elif norm == 'MSN':
+            self.layer = nn.Sequential(
+                MeanSpectralNormConv2d(in_channels, out_channels, 3, 1, 0),
+                nn.ReLU(inplace=True),
+                MeanSpectralNormConv2d(out_channels, out_channels, 3, 1, 0),
+                nn.ReLU(inplace=True))
+        else:
+            if norm != 'BN':
+                raise UserWarning('Undefined normalization ' + norm + '. Using BatchNorm instead.')
+            self.layer = nn.Sequential(
+                        ConvNorm(in_channels, out_channels, norm, conv_args=(3, 1, 0, True)),
+                        nn.ReLU(inplace=True),
+                        ConvNorm(out_channels, out_channels, norm, conv_args=(3, 1, 0, True)),
+                        nn.ReLU(inplace=True))
 
     def forward(self, input):
         return self.layer(input)
@@ -20,7 +35,7 @@ class unetDown(nn.Module):
 class unetUp(nn.Module):
     def __init__(self, in_channels, out_channels, is_deconv):
         super(unetUp, self).__init__()
-        self.conv = unetDown(in_channels, out_channels)
+        self.conv = unetDown(in_channels, out_channels, norm=None)
 
         if is_deconv:
             self.up = nn.ConvTranspose2d(in_channels, out_channels, kernel_size=2, stride=2)
@@ -56,7 +71,7 @@ class UNet(nn.Module):
         modules= []
         # Downsampling phase
         for i in range(1, len(filters)-1):
-            modules.append(unetDown(filters[i-1], filters[i]))
+            modules.append(unetDown(filters[i-1], filters[i], norm))
             modules.append(nn.MaxPool2d(kernel_size=2))
 
         modules.append(ConvNorm(filters[-2], filters[-1], 'BN', conv_args=(3,1,0, True)))
@@ -83,7 +98,7 @@ class UNet(nn.Module):
 
 
 if __name__ == "__main__":
-    u = UNet(3, 10)
+    u = UNet(3, 10, norm = 'MSN')
 
     inp = torch.randn(32,3,512,512) #M x C x H x W
     u.train()
