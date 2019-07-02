@@ -46,6 +46,13 @@ class unetUp(nn.Module):
         output2 = self.up(input2)
         offset = output2.size(2) - input1.size(2)
         padding = 2*[int(offset/2), offset//2]
+        """
+        The above padding is adopted for generality, in case
+        offset value is an odd number. in which case,
+        one dimension must be padded with 1 more layer of zeros
+        than the other. int(offset//2) rounds down while
+        offset//2 often rounds up. (Peculiar indeed!)
+        """
         #print(rint(offset/2), int(offset/2), padding)
 
         output1 = F.pad(input1, padding)
@@ -66,7 +73,7 @@ class UNet(nn.Module):
             raise ValueError('Number filters must be at least 3.')
 
         filters = [int(f/filter_scale) for f in filters]
-        filters.insert(0, in_channels)
+        filters.insert(0, in_channels) # To account for the initial channels
 
         modules= []
         # Downsampling phase
