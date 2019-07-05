@@ -38,6 +38,26 @@ class MeanWeightNormConv2d(nn.Module):
         x = x - self.batch_mean + self.bias
         return x.view(size)
 
+class MeanWeightNormConvReLU(nn.Module):
+    """
+    Implements Conv2d layer with Weight Normalization followed by a
+    modified ReLU layer called as 'Translated ReLU'
+    from the paper 'https://arxiv.org/abs/1704.03971'
+    """
+    def __init__(self,in_channels, out_channels, kernel_size,
+                 stride=1, padding=0, dilation=1, groups=1,
+                 bias = True, padding_mode='zeros'):
+        super(MeanWeightNormConvReLU, self).__init__()
+
+        self.wn = MeanWeightNormConv2d(in_channels, out_channels, kernel_size,
+                 stride, padding, dilation, groups, bias , padding_mode)
+        self.relu = nn.ReLU(inplace=True)
+
+    def forward(self, input):
+        x = self.wn(input)
+        x = self.relu(x) - self.bias
+        return x
+
 class MeanWeightNormLinear(nn.Module):
     def __init__(self,in_features, out_features, bias=True):
         super(MeanWeightNormLinear, self).__init__()
@@ -55,4 +75,21 @@ class MeanWeightNormLinear(nn.Module):
             self.batch_mean = x.mean(0)
 
         x = x - self.batch_mean + self.bias
+        return x
+
+class MeanWeightNormLinReLU(nn.Module):
+    """
+    Implements linear layer with Weight Normalization followed by a
+    modified ReLU layer called as 'Translated ReLU'
+    from the paper 'https://arxiv.org/abs/1704.03971'
+    """
+    def __init__(self,in_features, out_features, bias=True):
+        super(MeanWeightNormLinReLU, self).__init__()
+
+        self.wn = MeanWeightNormLinear(in_features, out_features, bias)
+        self.relu = nn.ReLU(inplace=True)
+
+    def forward(self, input):
+        x = self.wn(input)
+        x = self.relu(x) - self.bias
         return x

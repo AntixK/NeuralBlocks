@@ -31,6 +31,26 @@ class MeanSpectralNormConv2d(nn.Module):
         x = x - self.batch_mean + self.bias
         return x.view(size)
 
+class MeanSpectralNormConvReLU(nn.Module):
+    """
+    Implements Conv2d layer with MSN followed by a modified ReLU layer called as
+    'Translated ReLU' from the paper 'https://arxiv.org/abs/1704.03971'
+    """
+    def __init__(self,in_channels, out_channels, kernel_size,
+                 stride=1, padding=0, dilation=1, groups=1,
+                 bias = True, padding_mode='zeros'):
+        super(MeanSpectralNormConvReLU, self).__init__()
+
+        self.msn = MeanSpectralNormConv2d(in_channels, out_channels, kernel_size,
+                 stride, padding, dilation, groups, bias , padding_mode)
+        self.relu = nn.ReLU(inplace=True)
+
+    def forward(self, input):
+        x = self.msn(input)
+        x = self.relu(x) - self.bias
+        return x
+
+
 class MeanSpectralNormLinear(nn.Module): # Basically BatchNorm 1D
     def __init__(self,in_features, out_features, bias=True):
         super(MeanSpectralNormLinear, self).__init__()
@@ -48,4 +68,20 @@ class MeanSpectralNormLinear(nn.Module): # Basically BatchNorm 1D
             self.batch_mean = x.mean(0)
 
         x = x - self.batch_mean + self.bias
+        return x
+
+class MeanSpectralNormLinReLU(nn.Module):
+    """
+    Implements Linear layer with MSN followed by a modified ReLU layer called as
+    'Translated ReLU' from the paper 'https://arxiv.org/abs/1704.03971'
+    """
+    def __init__(self,in_features, out_features, bias=True):
+        super(MeanSpectralNormLinReLU, self).__init__()
+
+        self.msn = MeanSpectralNormLinear(in_features, out_features, bias)
+        self.relu = nn.ReLU(inplace=True)
+
+    def forward(self, input):
+        x = self.msn(input)
+        x = self.relu(x) - self.bias
         return x
