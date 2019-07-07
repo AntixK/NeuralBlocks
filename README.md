@@ -12,3 +12,6 @@
 
 ### :rocket: Usage
 
+### :pray: Acknowledgemants
+ - https://github.com/bharathgs/Awesome-pytorch-list
+

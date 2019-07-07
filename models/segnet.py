@@ -22,7 +22,7 @@ class segnetDown(nn.Module):
                                        kernel_size=3, stride=1, padding=1, norm=norm))
         self.layer = nn.Sequential(*module)
 
-        print(self.layer)
+        #print(self.layer)
         self.maxpool_argmax = nn.MaxPool2d(2,2, return_indices=True)
 
     def forward(self, input):
