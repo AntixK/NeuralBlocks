@@ -1,7 +1,6 @@
 import torch
 import torch.nn as nn
-from NeuralBlocks.blocks.convnorm import ConvNorm
-from NeuralBlocks.blocks.meanspectralnorm import MeanSpectralNormConv2d
+from NeuralBlocks.blocks.convnormrelu import ConvNormRelu
 
 class segnetDown(nn.Module):
     def __init__(self, in_channels, out_channels, norm=None, num_conv = 2):
@@ -18,23 +17,12 @@ class segnetDown(nn.Module):
         """
         num_filters= [in_channels] + (num_conv)*[out_channels]
 
-        if norm is None:
-            for i in range(num_conv):
-                module.append(nn.Conv2d(num_filters[i], num_filters[i+1], 3, 1, 1))
-                module.append(nn.ReLU(inplace=True))
-            self.layer = nn.Sequential(*module)
-        elif norm == 'MSN':
-            for i in range(num_conv):
-                module.append(MeanSpectralNormConv2d(num_filters[i], num_filters[i+1], 3, 1, 1))
-                module.append(nn.ReLU(inplace=True))
-            self.layer = nn.Sequential(*module)
-        else:
-            if norm != 'BN':
-                raise UserWarning('Undefined normalization ' + norm + '. Using BatchNorm instead.')
-            for i in range(num_conv):
-                module.append(ConvNorm(num_filters[i], num_filters[i+1], norm, conv_args=(3, 1, 1, True)))
-                module.append(nn.ReLU(inplace=True))
-            self.layer = nn.Sequential(*module)
+        for i in range(num_conv):
+            module.append(ConvNormRelu(num_filters[i], num_filters[i + 1],
+                                       kernel_size=3, stride=1, padding=1, norm=norm))
+        self.layer = nn.Sequential(*module)
+
+        print(self.layer)
         self.maxpool_argmax = nn.MaxPool2d(2,2, return_indices=True)
 
     def forward(self, input):
@@ -64,25 +52,10 @@ class segnetUp(nn.Module):
             self.up = nn.MaxUnpool2d(2,2)
 
         module = []
-
-        if norm is None:
-            for i in range(num_conv):
-                module.append(nn.Conv2d(num_filters[i], num_filters[i+1], 3, 1, 1))
-                module.append(nn.ReLU(inplace=True))
-            self.layer = nn.Sequential(*module)
-        elif norm == 'MSN':
-            for i in range(num_conv):
-                module.append(MeanSpectralNormConv2d(num_filters[i], num_filters[i+1], 3, 1, 1))
-                module.append(nn.ReLU(inplace=True))
-            self.layer = nn.Sequential(*module)
-        else:
-            if norm != 'BN':
-                raise UserWarning('Undefined normalization ' + norm + '. Using BatchNorm instead.')
-            for i in range(num_conv):
-                module.append(ConvNorm(num_filters[i], num_filters[i+1], norm, conv_args=(3, 1, 1, True)))
-                module.append(nn.ReLU(inplace=True))
-            self.layer = nn.Sequential(*module)
-
+        for i in range(num_conv):
+            module.append(ConvNormRelu(num_filters[i], num_filters[i + 1],
+                                    kernel_size = 3, stride= 1, padding=1, norm=norm))
+        self.layer = nn.Sequential(*module)
 
     def forward(self, input, indices, output_size):
         output = self.up(input = input, indices = indices, output_size=output_size)
@@ -151,21 +124,8 @@ class SegNet(nn.Module):
 
 
 if __name__ == "__main__":
-    s = SegNet(3, 10, norm = 'MSN')
+    s = SegNet(3, 10, norm = 'BN')
 
     inp = torch.randn(32,3,128, 128) #M x C x H x W
     s.train()
     result = s(inp)
-
-
-
-
-
-
-
-
-
-
-
-
-

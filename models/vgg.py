@@ -1,5 +1,9 @@
 import torch.nn as nn
 from NeuralBlocks.blocks.meanspectralnorm import MeanSpectralNormConv2d
+from NeuralBlocks.blocks.meanspectralnorm import MeanSpectralNormConvReLU
+from NeuralBlocks.blocks.meanweightnorm import MeanWeightNormConv2d
+from NeuralBlocks.blocks.meanweightnorm import MeanWeightNormConvReLU
+from NeuralBlocks.blocks.convnormrelu import ConvNormRelu
 
 cfgs = {
     11: [64, 'M', 128, 'M', 256, 256, 'M', 512, 512, 'M', 512, 512, 'M'],
@@ -26,22 +30,7 @@ class VGG(nn.Module):
             if v == 'M':
                 layers += [nn.MaxUnpool2d(kernel_size=2, stride=2)]
             else:
-                if norm == 'MSN':
-                    conv2d = MeanSpectralNormConv2d(in_channels, v, kernel_size=3, padding=1)
-                    layers += [conv2d]
-                elif norm != 'IN':
-                    conv2d = nn.Conv2d(in_channels, v, kernel_size=3, padding=1)
-                    layers += [conv2d, nn.InstanceNorm2d(v)]
-                elif norm != 'GN':
-                    conv2d = nn.Conv2d(in_channels, v, kernel_size=3, padding=1)
-                    layers += [conv2d, nn.GroupNorm(16,v)]
-                else:
-                    if norm != 'BN':
-                        raise UserWarning('Undefined normalization ' + norm + '. Using BatchNorm instead.')
-                    conv2d = nn.Conv2d(in_channels,v, kernel_size=3, padding=1)
-                    layers += [conv2d, nn.BatchNorm2d(v)]
-                layers += [nn.ReLU(inplace=True)]
-
+                layers+=[ConvNormRelu(in_channels, v, kernel_size=3, padding=1, norm=norm)]
                 in_channels = v
         self.features = nn.Sequential(*layers)
 

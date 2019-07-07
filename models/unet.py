@@ -2,32 +2,21 @@ import torch
 import torch.nn as nn
 import torch.nn.functional as F
 from NeuralBlocks.blocks.convnorm import ConvNorm
-from NeuralBlocks.blocks.meanspectralnorm import MeanSpectralNormConv2d
+from NeuralBlocks.blocks.convnormrelu import ConvNormRelu
+
 
 class unetDown(nn.Module):
     def __init__(self, in_channels, out_channels, norm=None):
         super(unetDown, self).__init__()
+        """
+        For UNet, the downsampling layers have the form
+            conv (in_channels, out_channels) + BN + ReLU
+            conv (out_channels, out_channels) + BN + ReLU
+        """
 
-        if norm is None:
-            self.layer = nn.Sequential(
-                nn.Conv2d(in_channels, out_channels, 3, 1, 0),
-                nn.ReLU(inplace=True),
-                nn.Conv2d(out_channels, out_channels, 3, 1, 0),
-                nn.ReLU(inplace=True))
-        elif norm == 'MSN':
-            self.layer = nn.Sequential(
-                MeanSpectralNormConv2d(in_channels, out_channels, 3, 1, 0),
-                nn.ReLU(inplace=True),
-                MeanSpectralNormConv2d(out_channels, out_channels, 3, 1, 0),
-                nn.ReLU(inplace=True))
-        else:
-            if norm != 'BN':
-                raise UserWarning('Undefined normalization ' + norm + '. Using BatchNorm instead.')
-            self.layer = nn.Sequential(
-                        ConvNorm(in_channels, out_channels, norm, conv_args=(3, 1, 0, True)),
-                        nn.ReLU(inplace=True),
-                        ConvNorm(out_channels, out_channels, norm, conv_args=(3, 1, 0, True)),
-                        nn.ReLU(inplace=True))
+        self.layer = nn.Sequential(
+                    ConvNormRelu(in_channels, out_channels, norm=norm, kernel_size=3),
+                    ConvNormRelu(out_channels, out_channels, norm=norm, kernel_size=3))
 
     def forward(self, input):
         return self.layer(input)
@@ -81,10 +70,11 @@ class UNet(nn.Module):
             modules.append(unetDown(filters[i-1], filters[i], norm))
             modules.append(nn.MaxPool2d(kernel_size=2))
 
-        modules.append(ConvNorm(filters[-2], filters[-1], 'BN', conv_args=(3,1,0, True)))
+        modules.append(ConvNorm(filters[-2], filters[-1], norm='BN', kernel_size=3))
 
         self.down_layers = nn.ModuleList(modules)
 
+        #Upsampling Phase
         modules = []
         for i in range(len(filters)-1,1,-1):
             modules.append(unetUp(filters[i], filters[i-1], self.is_deconv))
