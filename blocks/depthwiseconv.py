@@ -22,7 +22,7 @@ class DepthwiseSperableConv(nn.Module):
              bias, padding_mode, norm)
 
         self.point_conv = ConvNormRelu(in_channels, out_channels, kernel_size=1,
-             stride=1, bias=False, norm=norm)
+             stride=1, bias=False,norm=norm)
 
     def forward(self, input):
         x = self.depth_conv(input)

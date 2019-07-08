@@ -1,46 +1,89 @@
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
+from NeuralBlocks.blocks.denseblock import DenseBlock
+from NeuralBlocks.blocks.convnormrelupool import ConvNormReLUPool
+from NeuralBlocks.blocks.meanspectralnorm import MeanSpectralNormConv2d
 
-class DenseLayer(nn.Module):
-    def __init__(self, num_features, growth_rate, bn_size, drop_rate):
-        super(DenseLayer, self).__init__()
-        self.layer1 = nn.Sequential(
-                        nn.BatchNorm2d(num_features),
-                        nn.ReLU(inplace=True),
-                        nn.Conv2d(num_features, bn_size*growth_rate,
-                                 kernel_size=1, stride=1, bias=False)
-                        )
 
-        self.layer2 = nn.Sequential(
-                        nn.BatchNorm2d(bn_size*growth_rate),
-                        nn.ReLU(inplace=True),
-                        nn.Conv2d(bn_size*growth_rate, growth_rate,
-                                           kernel_size=3, stride=1, padding=1,
-                                           bias=False))
-        self.drop_rate = drop_rate
+cfgs = {
+        '161': {'growth_rate' : 32,
+                'block_config' : (6,12,24,16),
+                'in_features'  : 64},
+        '169': {'growth_rate' : 32,
+                'block_config' : (6,12,32,32),
+                'in_features'  : 64},
+        '201': {'growth_rate' : 32,
+                'block_config' : (6,12,48,32),
+                'in_features'  : 64},
+        }
+
+class DenseNet(nn.Module):
+
+    def __init__(self, in_channels, num_classes, in_features = 64, growth_rate = 32,
+                 block_config=(6,12,24,16),bn_size=4, drop_rate=0, norm='BN'):
+        super(DenseNet, self).__init__()
+
+        self.features = ConvNormReLUPool(in_channels, in_features, conv_kernel_size=7,
+                                         conv_stride=2, conv_padding=3, conv_bias=False,
+                                         norm=norm, pool_kernel_size=3, pool_stride=2,
+                                         pool_padding=1, pool_type='max')
+
+        num_features = in_features
+
+        for i, num_layers in enumerate(block_config):
+            dense_block = DenseBlock(num_layers,num_features,
+                                     growth_rate=growth_rate,
+                                     bn_size=bn_size,
+                                     drop_rate=drop_rate)
+            self.features.add_module('dense_block%d'%(i+1), dense_block)
+
+            num_features += num_layers*growth_rate
+
+            if i != len(block_config)-1:
+                transition_block = ConvNormReLUPool(
+                    num_features, num_features//2, conv_kernel_size=1, conv_stride=1,
+                    conv_bias=False, norm=norm,pool_type='avg', pool_kernel_size=1,
+                    pool_stride=1, conv_last=True)
+                self.features.add_module('transition%d'%(i+1), transition_block)
+                num_features = num_features // 2
+
+        self.features.add_module('lastnorm', nn.BatchNorm2d(num_features))
+        self.fc = nn.Linear(num_features, num_classes)
+        self._initialize_weights()
+
+    def _initialize_weights(self):
+        for m in self.modules():
+            if isinstance(m, nn.Conv2d):
+                nn.init.kaiming_normal_(m.weight, mode='fan_out', nonlinearity='relu')
+                if m.bias is not None:
+                    nn.init.constant_(m.bias, 0)
+            elif isinstance(m, MeanSpectralNormConv2d):
+                nn.init.kaiming_normal_(m.conv.weight, mode='fan_out', nonlinearity='relu')
+                if m.bias is not None:
+                    nn.init.constant_(m.bias, 0)
+                if m.conv.bias is not None:
+                    nn.init.constant_(m.conv.bias, 0)
+            elif isinstance(m, nn.BatchNorm2d):
+                nn.init.constant_(m.weight, 1)
+                nn.init.constant_(m.bias, 0)
+            elif isinstance(m, nn.Linear):
+                nn.init.normal_(m.weight, 0, 0.01)
+                nn.init.constant_(m.bias, 0)
 
     def forward(self, input):
-        x = torch.cat(input,1)
-        x = self.layer1(x)
-        x = self.layer2(x)
-
-        if self.drop_rate > 0:
-            x = F.dropout(x, p =self.drop_rate, training=self.training)
-
+        x = self.features(input)
+        x = F.relu(x, inplace=True)
+        x = F.adaptive_avg_pool2d(x, (4,4)).view(x.size(0), -1)
+        x = self.fc(x)
         return x
 
-class DenseBlock(nn.Module):
-    def __init__(self, num_layers, num_features, bn_size, growth_rate, drop_rate):
-        super(DenseBlock, self).__init__()
-        for i in range(num_layers):
-            layer = DenseLayer(num_features + i*growth_rate, growth_rate=growth_rate,
-                               bn_size=bn_size, drop_rate=drop_rate)
-            self.add_module('denselayer{}'.format(i+1), layer)
+if __name__ == '__main__':
+    input = torch.randn(16,3,512,512)
 
-    def forward(self, input):
-        fea
+    d = DenseNet(3, 10, norm='MSN')
+    print(d(input).size())
 
 
-class DenseNet:
-    pass
+
+
