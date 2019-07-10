@@ -8,18 +8,28 @@ class ConvNormRelu(nn.Module):
 
     def __init__(self, in_channels, out_channels, kernel_size,
                  stride=1, padding=0, dilation=1, groups=1,
-                 bias = True, padding_mode='zeros', norm = 'BN', groups_size=16, conv_last = False):
+                 bias = True, padding_mode='zeros', norm = 'BN',
+                 groups_size=16, conv_last = False, act = 'relu'):
         super(ConvNormRelu, self).__init__()
 
         if norm not in [None,'BN', 'IN', 'GN', 'LN','WN', 'MSN', 'MSNTReLU', 'WNTRelU']:
             raise ValueError("Undefined norm value. Must be one of "
                              "[None,'BN', 'IN', 'GN', 'LN', 'WN', 'MSN', 'MSNTReLU', 'WNTRelU']")
+
+        def act_fn(act):
+            if act == 'relu':
+                return nn.ReLU(inplace=True)
+            elif act == 'leakyrelu':
+                return nn.LeakyReLU(0.2, inplace=True)
+            else:
+                raise ValueError('Undefined activation function.')
+
         layers = []
         if norm == 'MSN':
             conv2d = MeanSpectralNormConv2d(in_channels, out_channels, kernel_size,
                  stride, padding, dilation, groups,
                  bias, padding_mode)
-            layers += [conv2d, nn.ReLU(inplace=True)]
+            layers += [conv2d, act_fn(act)]
         elif norm == 'MSNTReLU':
             conv2d = MeanSpectralNormConvReLU(in_channels, out_channels, kernel_size,
                  stride, padding, dilation, groups,
@@ -29,7 +39,7 @@ class ConvNormRelu(nn.Module):
             conv2d = MeanWeightNormConv2d(in_channels, out_channels, kernel_size,
                  stride, padding, dilation, groups,
                  bias, padding_mode)
-            layers += [conv2d, nn.ReLU(inplace=True)]
+            layers += [conv2d, act_fn(act)]
         elif norm == 'WNTReLU':
             conv2d = MeanWeightNormConvReLU(in_channels, out_channels, kernel_size,
                  stride, padding, dilation, groups,
@@ -39,27 +49,27 @@ class ConvNormRelu(nn.Module):
             conv2d = nn.Conv2d(in_channels, out_channels, kernel_size,
                  stride, padding, dilation, groups,
                  bias, padding_mode)
-            layers += [conv2d, nn.InstanceNorm2d(out_channels), nn.ReLU(inplace=True)]
+            layers += [conv2d, nn.InstanceNorm2d(out_channels), act_fn(act)]
         elif norm == 'GN':
             conv2d = nn.Conv2d(in_channels, out_channels, kernel_size,
                  stride, padding, dilation, groups,
                  bias, padding_mode)
-            layers += [conv2d, nn.GroupNorm(groups_size, out_channels), nn.ReLU(inplace=True)]
+            layers += [conv2d, nn.GroupNorm(groups_size, out_channels), act_fn(act)]
         elif norm == 'LN':
             conv2d = nn.Conv2d(in_channels, out_channels, kernel_size,
                  stride, padding, dilation, groups,
                  bias, padding_mode)
-            layers += [conv2d, nn.LayerNorm(groups_size, out_channels), nn.ReLU(inplace=True)]
+            layers += [conv2d, nn.LayerNorm(groups_size, out_channels), act_fn(act)]
         elif norm == 'BN':
             conv2d = nn.Conv2d(in_channels, out_channels, kernel_size,
                  stride, padding, dilation, groups,
                  bias, padding_mode)
-            layers += [conv2d, nn.BatchNorm2d(out_channels), nn.ReLU(inplace=True)]
+            layers += [conv2d, nn.BatchNorm2d(out_channels), act_fn(act)]
         else:
             conv2d = nn.Conv2d(in_channels, out_channels, kernel_size,
                                stride, padding, dilation, groups,
                                bias, padding_mode)
-            layers += [conv2d, nn.ReLU(inplace=True)]
+            layers += [conv2d, act_fn(act)]
 
         """
         conv_last is a flag to change the order of operations from
