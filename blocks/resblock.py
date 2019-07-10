@@ -26,4 +26,4 @@ class ResidualBlock(nn.Module):
 
     def forward(self, input):
         residual = input
-        return F.relu(residual + self.layer(input))
+        return residual + self.layer(input)
