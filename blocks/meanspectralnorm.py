@@ -13,6 +13,8 @@ class MeanSpectralNormConv2d(nn.Module):
                               bias=bias, padding_mode=padding_mode))
 
         self.bias = nn.Parameter(torch.zeros(out_channels,1))
+        self.register_buffer('running_mean', torch.zeros(out_channels))
+        self.momentum = 0.1
 
     def _check_input_dim(self, input):
         if input.dim() != 4:
@@ -21,16 +23,23 @@ class MeanSpectralNormConv2d(nn.Module):
 
     def forward(self, input):
         self._check_input_dim(input)
-
         x = self.conv(input)
-        size = x.size()
-        x = x.transpose(0, 1).contiguous().view(x.size(1), -1)
-        if self.training:
-            # Compute the mean and standard deviation
-            self.batch_mean = x.mean(1)[:, None]
 
-        x = x - self.batch_mean + self.bias
-        return x.view(size)
+        # Recenter the pre-activations using running mean
+        y = x.transpose(0, 1)
+        return_shape = y.shape
+        y = y.contiguous().view(x.size(1), -1)
+        mu = y.mean(dim=1)
+        if self.training is not True:
+            y = y - self.running_mean.view(-1, 1)
+        else:
+            with torch.no_grad():
+                self.running_mean = (1 - self.momentum) * self.running_mean + self.momentum * mu
+            y = y - mu.view(-1, 1)
+
+        y = y + self.bias
+        return y.view(return_shape).transpose(0, 1)
+
 
 class MeanSpectralNormTransConv2d(nn.Module):
     def __init__(self,in_channels, out_channels, kernel_size,
@@ -51,16 +60,22 @@ class MeanSpectralNormTransConv2d(nn.Module):
 
     def forward(self, input):
         self._check_input_dim(input)
-
         x = self.conv(input)
-        size = x.size()
-        x = x.transpose(0, 1).contiguous().view(x.size(1), -1)
-        if self.training:
-            # Compute the mean and standard deviation
-            self.batch_mean = x.mean(1)[:, None]
 
-        x = x - self.batch_mean + self.bias
-        return x.view(size)
+        # Recenter the pre-activations using running mean
+        y = x.transpose(0, 1)
+        return_shape = y.shape
+        y = y.contiguous().view(x.size(1), -1)
+        mu = y.mean(dim=1)
+        if self.training is not True:
+            y = y - self.running_mean.view(-1, 1)
+        else:
+            with torch.no_grad():
+                self.running_mean = (1 - self.momentum) * self.running_mean + self.momentum * mu
+            y = y - mu.view(-1, 1)
+
+        y = y + self.bias
+        return y.view(return_shape).transpose(0, 1)
 ###========================================================================================###
 class MeanSpectralNormConvReLU(nn.Module):
     """
@@ -79,8 +94,12 @@ class MeanSpectralNormConvReLU(nn.Module):
 
     def forward(self, input):
         x = self.msn(input)
-        x = self.relu(x) - self.bias
-        return x
+        x = self.relu(x)
+        y = x.transpose(0, 1)
+        return_shape = y.shape
+        y = y.contiguous().view(x.size(1), -1)
+        y = y - self.msn.bias
+        return y.view(return_shape).transpose(0, 1)
 
 class MeanSpectralNormTransConvReLU(nn.Module):
     """
@@ -99,8 +118,11 @@ class MeanSpectralNormTransConvReLU(nn.Module):
 
     def forward(self, input):
         x = self.msn(input)
-        x = self.relu(x) - self.bias
-        return x
+        x = self.relu(x)
+        size = x.size()
+        x = x.transpose(0, 1).contiguous().view(x.size(1), -1)
+        x = x - self.msn.bias
+        return x.view(size)
 ###========================================================================================###
 class MeanSpectralNormLinear(nn.Module): # Basically BatchNorm 1D
     def __init__(self,in_features, out_features, bias=True):
@@ -135,5 +157,5 @@ class MeanSpectralNormLinReLU(nn.Module):
 
     def forward(self, input):
         x = self.msn(input)
-        x = self.relu(x) - self.bias
+        x = self.relu(x) - self.msn.bias
         return x
