@@ -9,16 +9,16 @@ class DenseBlock(nn.Module):
     A denselayer consists of two layers of BN+ReLU+Conv.
     Dropout after conv is optional.
     """
-    def __init__(self, num_layers, in_features, growth_rate, bn_size, drop_rate):
+    def __init__(self, num_layers, in_features, growth_rate, bn_size, drop_rate, norm='BN'):
         super(DenseBlock, self).__init__()
 
 
         for i in range(num_layers):
             dense_layer = nn.Sequential(
                             ConvNormRelu(in_features + i * growth_rate, bn_size*growth_rate,
-                                   kernel_size=1, stride=1, bias=False,conv_last=True),
+                                   kernel_size=1, stride=1, bias=False,norm=norm, conv_last=True),
                             ConvNormRelu(bn_size*growth_rate, growth_rate,
-                                   kernel_size=3, stride=1, padding=1, bias=False, conv_last=True))
+                                   kernel_size=3, stride=1, padding=1, bias=False, norm=norm, conv_last=True))
 
             self.add_module('dense_layer%d'%(i+1), dense_layer)
 

@@ -35,7 +35,7 @@ class DenseNet(nn.Module):
             dense_block = DenseBlock(num_layers,num_features,
                                      growth_rate=growth_rate,
                                      bn_size=bn_size,
-                                     drop_rate=drop_rate)
+                                     drop_rate=drop_rate, norm=norm)
             self.features.add_module('dense_block%d'%(i+1), dense_block)
 
             num_features += num_layers*growth_rate
