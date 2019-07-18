@@ -13,9 +13,9 @@ class ConvNormRelu(nn.Module):
                  groups_size=16, conv_last = False, act = 'relu'):
         super(ConvNormRelu, self).__init__()
 
-        if norm not in [None,'BN', 'IN', 'GN', 'LN','WN', 'SN','MSN', 'MSNTReLU', 'WNTRelU']:
+        if norm not in [None,'BN', 'IN', 'GN', 'LN','WN', 'SN','MSN', 'MSNTReLU', 'WNTReLU']:
             raise ValueError("Undefined norm value. Must be one of "
-                             "[None,'BN', 'IN', 'GN', 'LN', 'WN', 'SN','MSN', 'MSNTReLU', 'WNTRelU']")
+                             "[None,'BN', 'IN', 'GN', 'LN', 'WN', 'SN','MSN', 'MSNTReLU', 'WNTReLU']")
 
         def act_fn(act):
             if act == 'relu':
