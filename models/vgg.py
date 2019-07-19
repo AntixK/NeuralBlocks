@@ -14,7 +14,7 @@ cfgs = {
 
 
 class VGG(nn.Module):
-    def __init__(self, model_config, in_channels, num_class, norm = 'BN', init_weights=True):
+    def __init__(self, model_config, in_channels, num_class, norm = 'BN', init_weights=False):
         super(VGG, self).__init__()
         layers= []
 
@@ -28,7 +28,7 @@ class VGG(nn.Module):
 
         for v in model_config:
             if v == 'M':
-                layers += [nn.MaxUnpool2d(kernel_size=2, stride=2)]
+                layers += [nn.MaxPool2d(kernel_size=2, stride=2)]
             else:
                 layers+=[ConvNormRelu(in_channels, v, kernel_size=3, padding=1, norm=norm)]
                 in_channels = v
