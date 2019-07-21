@@ -10,11 +10,11 @@ class ConvNorm(nn.Module):
                  bias = True, padding_mode='zeros', norm = 'BN', groups_size=16, conv_last = False):
         super(ConvNorm, self).__init__()
 
-        if norm not in [None,'BN', 'IN', 'GN', 'LN','WN', 'SN','MSN']:
+        if norm not in [None,'BN', 'IN', 'GN', 'LN','WN', 'SN','MSN', 'MSNTReLU', 'WNTReLU']:
             raise ValueError("Undefined norm value. Must be one of "
-                             "[None,'BN', 'IN', 'GN', 'LN', 'WN', 'SN', 'MSN']")
+                             "[None,'BN', 'IN', 'GN', 'LN', 'WN', 'SN','MSN', 'MSNTReLU', 'WNTReLU']")
         layers = []
-        if norm == 'MSN':
+        if norm in ['MSN','MSNTReLU']:
             conv2d = MeanSpectralNormConv2d(in_channels, out_channels, kernel_size,
                  stride, padding, dilation, groups,
                  bias, padding_mode)
@@ -24,7 +24,7 @@ class ConvNorm(nn.Module):
                  stride, padding, dilation, groups,
                  bias, padding_mode)
             layers += [conv2d]
-        elif norm == 'WN':
+        elif norm in ['WN', 'WNTReLU']:
             conv2d = MeanWeightNormConv2d(in_channels, out_channels, kernel_size,
                  stride, padding, dilation, groups,
                  bias, padding_mode)
@@ -62,7 +62,7 @@ class ConvNorm(nn.Module):
             So to change the order, we simply rotate the array by 1 to the 
             left and change the num_features to the in_channels size
         """
-        if conv_last and norm not in [None, 'MSN', 'WN']:
+        if conv_last and norm not in [None, 'MSN', 'SN','WN', 'WNTReLU', 'MSNTReLU']:
             layers = layers[1:] + layers[:1]
             # Reinitialize the batchnorm layer or its variants
             layers[0].__init__(in_channels)

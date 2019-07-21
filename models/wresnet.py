@@ -13,7 +13,7 @@ class WideResNet(nn.Module):
 
         n = int((depth-4)/6)
         k = widen_factor
-        num_stages = [16,16*k, 32*k, 64*k]
+        num_stages = [16,16*k, 32*k, 32*k]
 
         self.conv1 = nn.Conv2d(3, num_stages[0], kernel_size=3, stride=1, padding=1, bias=True)
         self.layer1 = self._wideLayer(num_stages[1], n,dropout_rate,stride=1)
@@ -55,7 +55,7 @@ class WideResNet(nn.Module):
         return x
 
 if __name__ == '__main__':
-    net=WideResNet(depth=28, num_classes=10, dropout_rate=0.3, widen_factor=10, norm=None)
+    net=WideResNet(depth=28, num_classes=10, dropout_rate=0.3, widen_factor=10, norm='MSN')
     y = net(torch.randn(1,3,32,32))
 
     print(y.size())

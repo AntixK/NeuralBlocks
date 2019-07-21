@@ -6,7 +6,7 @@ from NeuralBlocks.blocks.meanweightnorm import MeanWeightNormConvReLU
 from NeuralBlocks.blocks.convnormrelu import ConvNormRelu
 
 cfgs = {
-    11: [64, 'M', 128, 'M', 256, 256, 'M', 512, 512, 'M', 512, 512, 'M'],
+    11: [64, 'M', 128, 'M', 256, 256, 'M', 512, 512, 'M', 512, 128, 'M'],
     13: [64, 64, 'M', 128, 128, 'M', 256, 256, 'M', 512, 512, 'M', 512, 512, 'M'],
     16: [64, 64, 'M', 128, 128, 'M', 256, 256, 256, 'M', 512, 512, 512, 'M', 512, 512, 512, 'M'],
     19: [64, 64, 'M', 128, 128, 'M', 256, 256, 256, 256, 'M', 512, 512, 512, 512, 'M', 512, 512, 512, 512, 'M'],
@@ -34,16 +34,9 @@ class VGG(nn.Module):
                 in_channels = v
         self.features = nn.Sequential(*layers)
 
-        self.avgpool = nn.AdaptiveAvgPool2d((7,7))
+        self.avgpool = nn.AdaptiveAvgPool2d((3,3))
 
-        self.classifier = nn.Sequential(
-                            nn.Linear(512*7*7,4096),
-                            nn.ReLU(True),
-                            nn.Dropout(),
-                            nn.Linear(4096,4096),
-                            nn.ReLU(True),
-                            nn.Dropout(),
-                            nn.Linear(4096, num_class))
+        self.classifier = nn.Sequential(nn.Linear(128*3*3, num_class))
         if init_weights:
             self._initialize_weights()
 
@@ -73,3 +66,8 @@ class VGG(nn.Module):
                 nn.init.normal_(m.weight, 0, 0.01)
                 nn.init.constant_(m.bias, 0)
 
+if __name__ == "__main__":
+    net =  VGG(11,1, num_class=10, norm='BN')
+    import torch
+    input= torch.randn(32,1,28,28)
+    print(net(input).size())
