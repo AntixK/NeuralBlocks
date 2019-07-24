@@ -1,5 +1,6 @@
 import torch.nn as nn
 from NeuralBlocks.blocks.convnormrelu import ConvNormRelu
+from NeuralBlocks.blocks.convnorm import ConvNorm
 
 class DepthwiseSperableConv(nn.Module):
     """
@@ -14,19 +15,20 @@ class DepthwiseSperableConv(nn.Module):
     """
     def __init__(self, in_channels, out_channels, kernel_size,
                  stride=1, padding=0, dilation=1, groups=1,
-                 bias = False, padding_mode='zeros', norm='BN'):
+                 bias = False, padding_mode='zeros', norm='BN', act = False):
         super(DepthwiseSperableConv, self).__init__()
-
-        self.depth_conv = ConvNormRelu(in_channels, out_channels, kernel_size,
-             stride, padding, dilation, groups,
-             bias, padding_mode, norm)
-
-        self.point_conv = ConvNormRelu(in_channels, out_channels, kernel_size=1,
-             stride=1, bias=False,norm=norm)
+        self.depth_conv = ConvNormRelu(in_channels, in_channels, kernel_size,
+                                       stride, padding, dilation, groups,
+                                       bias, padding_mode, norm=norm)
+        if act == True:
+            self.point_conv = ConvNormRelu(in_channels, out_channels, kernel_size=1,
+                                           stride=1, bias=False, norm=norm)
+        else:
+            self.point_conv = ConvNorm(in_channels, out_channels, kernel_size=1,
+                 stride=1, bias=False,norm=norm)
 
     def forward(self, input):
         x = self.depth_conv(input)
-
         x = self.point_conv(x)
 
         return x

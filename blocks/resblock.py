@@ -1,6 +1,7 @@
 import torch.nn as nn
 from NeuralBlocks.blocks.convnorm import ConvNorm
 from NeuralBlocks.blocks.convnormrelu import ConvNormRelu
+from NeuralBlocks.blocks.depthwiseconv import DepthwiseSperableConv
 
 class ResidualBlock(nn.Module):
 
@@ -43,3 +44,83 @@ class ResidualBlock(nn.Module):
         residual = self.residue(input)
         x =  self.layer(input)
         return residual + x
+
+#=================================================================================#
+class InvertedResidualBlock(nn.Module):
+    '''
+    Expand + Depthwise Separable Conv(Depthwise + pointwise)
+    Mainly used in MobileNetv2
+    '''
+
+    def __init__(self, in_channels, out_channels, expansion,
+                 stride, kernel_size=3, padding=1, norm='BN'):
+        super(InvertedResidualBlock, self).__init__()
+        modules= []
+        self.stride = stride
+        planes = expansion*in_channels
+        modules.append(ConvNormRelu(in_channels, planes, norm=norm, kernel_size=1,
+                             stride=1, padding=0))
+        modules.append(DepthwiseSperableConv(planes,out_channels,kernel_size=kernel_size,
+                                             stride=stride, padding=padding,
+                                             groups=planes, norm=norm,act=True))
+
+        self.layer = nn.Sequential(*modules)
+
+        """
+            For the residual part, unlike the previous residual block,
+            here, the residue is added only when the stride is 1.
+            To make sure that the channel sizes match, the input
+            is transformed accordingly.            
+        """
+
+        if stride ==1 and out_channels != in_channels:
+            self.residue = nn.Sequential(nn.Conv2d(in_channels, out_channels, kernel_size=1,
+                                                   stride=1, bias=False))
+        else:
+            self.residue = nn.Sequential()
+
+
+    def forward(self, input):
+        residual = self.residue(input)
+        x =  self.layer(input)
+        return x + residual if self.stride == 1 else x
+
+#=================================================================================#
+class GroupedResidualBlock(nn.Module):
+    '''
+    Expand + Depthwise Separable Conv(Depthwise + pointwise)
+    Mainly used in ResNeXt
+    '''
+
+    def __init__(self, in_channels, out_channels, expansion,
+                 stride, kernel_size=3, padding=1, norm='BN'):
+        super(GroupedResidualBlock, self).__init__()
+        modules= []
+        self.stride = stride
+        planes = expansion*in_channels
+        modules.append(ConvNormRelu(in_channels, planes, norm=norm, kernel_size=1,
+                             stride=1, padding=0))
+        modules.append(DepthwiseSperableConv(planes,out_channels,kernel_size=kernel_size,
+                                             stride=stride, padding=padding,
+                                             groups=planes, norm=norm,act=True))
+
+        self.layer = nn.Sequential(*modules)
+
+        """
+            For the residual part, unlike the previous residual block,
+            here, the residue is added only when the stride is 1.
+            To make sure that the channel sizes match, the input
+            is transformed accordingly.            
+        """
+
+        if stride ==1 and out_channels != in_channels:
+            self.residue = nn.Sequential(nn.Conv2d(in_channels, out_channels, kernel_size=1,
+                                                   stride=1, bias=False))
+        else:
+            self.residue = nn.Sequential()
+
+
+    def forward(self, input):
+        residual = self.residue(input)
+        x =  self.layer(input)
+        return x + residual if self.stride == 1 else x
