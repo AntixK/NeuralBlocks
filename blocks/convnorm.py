@@ -2,6 +2,7 @@ import torch.nn as nn
 from NeuralBlocks.blocks.meanspectralnorm import MeanSpectralNormConv2d
 from NeuralBlocks.blocks.meanweightnorm import MeanWeightNormConv2d
 from NeuralBlocks.blocks.spectralnorm import SpectralNormConv2d
+from NeuralBlocks.blocks.weightnorm import WeightNormConv2d
 
 class ConvNorm(nn.Module):
 
@@ -10,9 +11,9 @@ class ConvNorm(nn.Module):
                  bias = True, padding_mode='zeros', norm = 'BN', groups_size=16, conv_last = False):
         super(ConvNorm, self).__init__()
 
-        if norm not in [None,'BN', 'IN', 'GN', 'LN','WN', 'SN','MSN', 'MSNTReLU', 'WNTReLU']:
+        if norm not in [None,'BN', 'IN', 'GN', 'LN','WN', 'SN', 'MWN','MSN', 'MSNTReLU', 'MWNTReLU']:
             raise ValueError("Undefined norm value. Must be one of "
-                             "[None,'BN', 'IN', 'GN', 'LN', 'WN', 'SN','MSN', 'MSNTReLU', 'WNTReLU']")
+                             "[None,'BN', 'IN', 'GN', 'LN', 'WN', 'SN','MWN', 'MSN', 'MSNTReLU', 'MWNTReLU']")
         layers = []
         if norm in ['MSN','MSNTReLU']:
             conv2d = MeanSpectralNormConv2d(in_channels, out_channels, kernel_size,
@@ -24,7 +25,12 @@ class ConvNorm(nn.Module):
                  stride, padding, dilation, groups,
                  bias, padding_mode)
             layers += [conv2d]
-        elif norm in ['WN', 'WNTReLU']:
+        elif norm == 'WN':
+            conv2d = WeightNormConv2d(in_channels, out_channels, kernel_size,
+                 stride, padding, dilation, groups,
+                 bias, padding_mode)
+            layers += [conv2d ]
+        elif norm in ['MWN', 'MWNTReLU']:
             conv2d = MeanWeightNormConv2d(in_channels, out_channels, kernel_size,
                  stride, padding, dilation, groups,
                  bias, padding_mode)

@@ -4,6 +4,7 @@ from NeuralBlocks.blocks.meanspectralnorm import MeanSpectralNormConvReLU
 from NeuralBlocks.blocks.meanweightnorm import MeanWeightNormConv2d
 from NeuralBlocks.blocks.meanweightnorm import MeanWeightNormConvReLU
 from NeuralBlocks.blocks.spectralnorm import SpectralNormConv2d
+from NeuralBlocks.blocks.weightnorm import WeightNormConv2d
 
 class ConvNormRelu(nn.Module):
 
@@ -13,9 +14,9 @@ class ConvNormRelu(nn.Module):
                  groups_size=16, conv_last = False, act = 'relu'):
         super(ConvNormRelu, self).__init__()
 
-        if norm not in [None,'BN', 'IN', 'GN', 'LN','WN', 'SN','MSN', 'MSNTReLU', 'WNTReLU']:
+        if norm not in [None,'BN', 'IN', 'GN', 'LN','WN', 'SN','MWN','MSN', 'MSNTReLU', 'MWNTReLU']:
             raise ValueError("Undefined norm value. Must be one of "
-                             "[None,'BN', 'IN', 'GN', 'LN', 'WN', 'SN','MSN', 'MSNTReLU', 'WNTReLU']")
+                             "[None,'BN', 'IN', 'GN', 'LN', 'WN', 'SN','MWN','MSN', 'MSNTReLU', 'MWNTReLU']")
 
         def act_fn(act):
             if act == 'relu':
@@ -42,11 +43,16 @@ class ConvNormRelu(nn.Module):
                  bias, padding_mode)
             layers += [conv2d, act_fn(act)]
         elif norm == 'WN':
+            conv2d = WeightNormConv2d(in_channels, out_channels, kernel_size,
+                                          stride, padding, dilation, groups,
+                                          bias, padding_mode)
+            layers += [conv2d, act_fn(act)]
+        elif norm == 'MWN':
             conv2d = MeanWeightNormConv2d(in_channels, out_channels, kernel_size,
                  stride, padding, dilation, groups,
                  bias, padding_mode)
             layers += [conv2d, act_fn(act)]
-        elif norm == 'WNTReLU':
+        elif norm == 'MWNTReLU':
             conv2d = MeanWeightNormConvReLU(in_channels, out_channels, kernel_size,
                  stride, padding, dilation, groups,
                  bias, padding_mode)
