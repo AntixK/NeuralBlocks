@@ -3,11 +3,11 @@ import torch.nn.functional as F
 from NeuralBlocks.blocks.convnormrelu import ConvNormRelu
 
 class LeNet(nn.Module):
-    def __init__(self, in_channels, num_classes, norm='BN'):
+    def __init__(self, in_channels, num_class, norm='BN'):
         super(LeNet, self).__init__()
         self.conv1 = ConvNormRelu(in_channels, out_channels=20, kernel_size=5)
         self.conv2 = ConvNormRelu(20, out_channels=50, kernel_size=5)
-        self.fc1 = nn.Linear(4 * 4 * 50, num_classes)
+        self.fc1 = nn.Linear(4 * 4 * 50, num_class)
 
     def forward(self, x):
         x = self.conv1(x)

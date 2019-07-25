@@ -9,12 +9,15 @@ class MobileNetV1(nn.Module):
 
 #====================================================================#
 # (Expansion, out_channels, num_blocks, stride)
+# CFG = [(1,16,1,1),
+#        (6,24,2,1),
+#        (6,32,3,2),
+#        (6,64,4,2),
+#        (6,96,3,1),
+#        (6,320,1,1)]
+
 CFG = [(1,16,1,1),
-       (6,24,2,1),
-       (6,32,3,2),
-       (6,64,4,2),
-       (6,96,3,1),
-       (6,320,1,1)]
+       (6,24,2,1)]
 
 class MobileNetV2(nn.Module):
     """
@@ -35,9 +38,9 @@ class MobileNetV2(nn.Module):
                               stride=1, padding=1, bias=False,norm=norm)
 
         self.invreslayers = self._invResLayer(in_channels=32)
-        self.conv2 = ConvNormRelu(320, 1280,kernel_size=1, stride=1,bias=False)
-        self.pool = nn.AvgPool2d(kernel_size=7)
-        self.linear = nn.Linear(1280, num_class)
+        self.conv2 = ConvNormRelu(self.cfg[-1][1], self.cfg[-1][1]*2,kernel_size=1, stride=1,bias=False)
+        self.pool = nn.AdaptiveAvgPool2d((5,5))
+        self.linear = nn.Linear(self.cfg[-1][1]*2*5*5, num_class)
 
     def _invResLayer(self, in_channels):
         layers = []
@@ -56,16 +59,23 @@ class MobileNetV2(nn.Module):
     def forward(self, input):
         x = self.conv1(input)
         x = self.invreslayers(x)
+
+
         x = self.conv2(x)
+
         x = self.pool(x)
+
         x = x.view(x.size(0), -1)
+
         x = self.linear(x)
         return x
 
 
 if __name__ == '__main__':
     import torch
-    from torchsummary import summary
+    import os
+    os.environ['CUDA_LAUNCH_BLOCKING'] = '1'
+    # from torchsummary import summary
     net = MobileNetV2(in_channels=1, num_class=10).cuda()
     x = torch.randn(2,1,32,32).cuda()
     y = net(x)
