@@ -1,9 +1,9 @@
-# import sys
-#
-# if __package__ is not None:
-#     sys.path.insert(1,sys.path[0]+'/'+__package__)
-#
-# #print(sys.path)
-#
-# # Perform all local module imports
-# from densenet import DenseNet
+from NeuralBlocks.models.cyclegan import *
+from NeuralBlocks.models.densenet import *
+from NeuralBlocks.models.lenet import *
+from NeuralBlocks.models.mobilenet import *
+from NeuralBlocks.models.unet import *
+from NeuralBlocks.models.vgg import *
+from NeuralBlocks.models.resnet import *
+from NeuralBlocks.models.wresnet import *
+from NeuralBlocks.models.segnet import *
