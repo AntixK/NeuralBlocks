@@ -78,6 +78,7 @@ if __name__ == "__main__":
     # u = ResNetGenerator(in_channels=3, num_res_blocks=9, out_channels=3, norm='BN')
     u = Discriminator(in_channels=3)
     import torch
+
     inp = torch.randn(1,3,256,256) #M x C x H x W
     u.train()
     result = u(inp)

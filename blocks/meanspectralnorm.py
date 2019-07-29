@@ -52,6 +52,8 @@ class MeanSpectralNormTransConv2d(nn.Module):
                               bias=bias, padding_mode=padding_mode, output_padding=output_padding))
 
         self.bias = nn.Parameter(torch.zeros(out_channels,1))
+        self.register_buffer('running_mean', torch.zeros(out_channels))
+        self.momentum = 0.1
 
     def _check_input_dim(self, input):
         if input.dim() != 4:

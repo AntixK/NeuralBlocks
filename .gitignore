@@ -4,3 +4,9 @@ data_utils/datasets/monet2photo/
 data_utils/datasets/
 
 notebooks/checkpoint/
+
+notebooks/images_MSN/
+
+notebooks/saved_models_MSN/
+
+notebooks/images_BN/

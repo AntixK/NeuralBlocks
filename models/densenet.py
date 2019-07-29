@@ -79,10 +79,14 @@ class DenseNet(nn.Module):
         return x
 
 if __name__ == '__main__':
-    input = torch.randn(16,3,512,512)
+    input = torch.randn(16,3,32,32).cuda()
 
-    d = DenseNet(3, 10, norm='MSN')
-    print(d(input).size())
+
+    d = DenseNet(3, 10, norm='MSN').cuda()
+    with torch.autograd.profiler.profile(use_cuda=True) as prof:
+        d(input)
+    del d
+    print(prof)
 
 
 

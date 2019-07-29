@@ -46,6 +46,45 @@ class MeanWeightNormConv2d(nn.Module):
         y = y + self.bias
         return y.view(return_shape).transpose(0, 1)
 
+class MeanWeightNormTransConv2d(nn.Module):
+
+    def __init__(self,in_channels, out_channels, kernel_size,
+                 stride=1, padding=0, output_padding=0,dilation=1, groups=1,
+                 bias = True, padding_mode='zeros'):
+        super(MeanWeightNormTransConv2d, self).__init__()
+
+        self.conv = weight_norm(nn.ConvTranspose2d(in_channels, out_channels, kernel_size=kernel_size,
+                              stride=stride, padding=padding, dilation=dilation, groups=groups,
+                              bias=bias, padding_mode=padding_mode, output_padding=output_padding))
+
+        self.bias = nn.Parameter(torch.zeros(out_channels,1))
+        self.register_buffer('running_mean', torch.zeros(out_channels))
+        self.momentum = 0.1
+
+    def _check_input_dim(self, input):
+        if input.dim() != 4:
+            raise ValueError('expected 4D input (got {}D input)'
+                             .format(input.dim()))
+
+    def forward(self, input):
+        self._check_input_dim(input)
+
+        x = self.conv(input)
+         # Recenter the pre-activations using running mean
+        y = x.transpose(0, 1)
+        return_shape = y.shape
+        y = y.contiguous().view(x.size(1), -1)
+        mu = y.mean(dim=1)
+        if self.training is not True:
+            y = y - self.running_mean.view(-1, 1)
+        else:
+            with torch.no_grad():
+                self.running_mean = (1 - self.momentum) * self.running_mean + self.momentum * mu
+            y = y - mu.view(-1, 1)
+
+        y = y + self.bias
+        return y.view(return_shape).transpose(0, 1)
+
 class MeanWeightNormConvReLU(nn.Module):
     """
     Implements Conv2d layer with Weight Normalization followed by a

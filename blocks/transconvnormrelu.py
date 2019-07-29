@@ -3,6 +3,7 @@ from NeuralBlocks.blocks.meanspectralnorm import MeanSpectralNormTransConv2d
 from NeuralBlocks.blocks.meanspectralnorm import MeanSpectralNormTransConvReLU
 
 from NeuralBlocks.blocks.meanweightnorm import MeanWeightNormConv2d
+from NeuralBlocks.blocks.weightnorm import WeightNormTransConv2d
 from NeuralBlocks.blocks.meanweightnorm import MeanWeightNormConvReLU
 
 class TransConvNormRelu(nn.Module):
@@ -28,24 +29,24 @@ class TransConvNormRelu(nn.Module):
 
         layers = []
         if norm == 'MSN':
-            conv2d = MeanSpectralNormTransConv2d(in_channels, out_channels, kernel_size,
-                 stride, padding, dilation, groups,
-                 bias, padding_mode)
+            conv2d = MeanSpectralNormTransConv2d(in_channels, out_channels, kernel_size=kernel_size,
+                 stride=stride, padding=padding, output_padding=output_padding, dilation=dilation,
+                 groups=groups, bias=bias, padding_mode=padding_mode)
             layers += [conv2d, act_fn(act)]
         elif norm == 'MSNTReLU':
-            conv2d = MeanSpectralNormTransConvReLU(in_channels, out_channels, kernel_size,
-                 stride, padding, dilation, groups,
-                 bias, padding_mode)
+            conv2d = MeanSpectralNormTransConvReLU(in_channels, out_channels, kernel_size=kernel_size,
+                 stride=stride, padding=padding, output_padding=output_padding, dilation=dilation,
+                 groups=groups, bias=bias, padding_mode=padding_mode)
             layers += [conv2d]
         elif norm == 'WN':
-            conv2d = MeanWeightNormConv2d(in_channels, out_channels, kernel_size,
-                 stride, padding, dilation, groups,
-                 bias, padding_mode)
+            conv2d = WeightNormTransConv2d(in_channels, out_channels, kernel_size=kernel_size,
+                 stride=stride, padding=padding, output_padding=output_padding, dilation=dilation,
+                 groups=groups, bias=bias, padding_mode=padding_mode)
             layers += [conv2d, act_fn(act)]
         elif norm == 'WNTReLU':
-            conv2d = MeanWeightNormConvReLU(in_channels, out_channels, kernel_size,
-                 stride, padding, dilation, groups,
-                 bias, padding_mode)
+            conv2d = MeanWeightNormConvReLU(in_channels, out_channels, kernel_size=kernel_size,
+                 stride=stride, padding=padding, output_padding=output_padding, dilation=dilation,
+                 groups=groups, bias=bias, padding_mode=padding_mode)
             layers += [conv2d]
         elif norm == 'IN':
             conv2d = nn.ConvTranspose2d(in_channels, out_channels, kernel_size=kernel_size,
