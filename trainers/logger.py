@@ -37,10 +37,15 @@ class Logger:
                 self.test_log[key].append(values[i])
 
     def get_logs(self):
+        "Returns a dict of both train and test logs"
         return {'Train_log':self.train_log,
                 'Test_log':self.test_log}
 
     def get_epoch_log_cols(self):
+        """
+        Returns the names of the logs for printing
+        - Used by master_bar.write()
+        """
         temp_list = []
         for key in self.train_log:
             if key != 'Batch_idx':
@@ -54,6 +59,10 @@ class Logger:
 
 
     def get_epoch_log(self):
+        """
+        Returns the recent entry in the log
+        for printing after each epoch
+        """
         temp_list = []
         for key, val in self.train_log.items():
             if key != 'Batch_idx':
