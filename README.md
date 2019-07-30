@@ -16,3 +16,7 @@
 ### :pray: Acknowledgemants
  - https://github.com/bharathgs/Awesome-pytorch-list
 
+[python-image]: https://img.shields.io/badge/Python-2.x|3.x-ff69b4.svg
+[python-url]: https://www.python.org/
+[pytorch-image]: https://img.shields.io/badge/PyTorch-1.1-2BAF2B.svg
+[pytorch-url]: https://pytorch.org/
