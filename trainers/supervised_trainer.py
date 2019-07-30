@@ -1,10 +1,13 @@
 import torch
 import os
+from time import time
+import datetime
 from NeuralBlocks.trainers.logger import Logger
 from fastprogress import master_bar, progress_bar
 
-class SupervisedTrainer:
-    def __init__(self, model, data_bunch, optimizer, loss_function, metrics='accuracy', use_cuda = True):
+class SupervisedTrainer():
+    def __init__(self, model, data_bunch, optimizer, loss_function, metrics=['accuracy'], use_cuda = True):
+
         self.model = model
         self.trainloader = data_bunch[0]
         self.testloader = data_bunch[1]
@@ -23,15 +26,9 @@ class SupervisedTrainer:
                                  "Set use_cuda = True for faster computation.")
 
         self.best_acc = 0
+        self.log_handle = Logger(metrics=metrics)
 
-        self.log = Logger()
-
-        self.train_loss_log =[]
-        self.train_acc_log = []
-        self.test_loss_log =[]
-        self.test_acc_log =[]
-
-    def train(self):
+    def train(self, epoch):
         self.model.train()
         train_loss = 0
         correct = 0
@@ -39,20 +36,27 @@ class SupervisedTrainer:
         for batch_idx, (inputs, targets) in enumerate(progress_bar(self.trainloader, parent=self.mb)):
             if self.use_cuda:
                 inputs, targets = inputs.cuda(), targets.cuda()
+
             self.optimizer.zero_grad()
             outputs = self.model(inputs)
             loss = self.criterion(outputs, targets)
             loss.backward()
             self.optimizer.step()
 
+            # Compute Loss
             train_loss += loss.item()
+            train_loss = round(train_loss/(batch_idx + 1), 4)
+
+            # Compute Metrics
             _, predicted = outputs.max(1)
             total += targets.size(0)
             correct += predicted.eq(targets).sum().item()
+            acc = round(100. * correct / total, 3)
 
-            self.train_loss_log.append(train_loss / (batch_idx + 1))
-            self.train_acc_log.append(100. * correct / total)
-            self.mb.child.comment = 'Train Loss:{:.3f}'.format(self.train_loss_log[-1])
+            # Add to log
+            self.log_handle.add_log([epoch + 1, batch_idx, train_loss, acc], is_train=True)
+
+            self.mb.child.comment = 'Train Loss:{:.3f}'.format(train_loss)
 
             # if (batch_idx % self.CHECKPOINT_INTERVAL == 0):
 
@@ -77,14 +81,16 @@ class SupervisedTrainer:
                 loss = self.criterion(outputs, targets)
 
                 test_loss += loss.item()
+                test_loss = round(test_loss/(batch_idx + 1), 4)
+
                 _, predicted = outputs.max(1)
                 total += targets.size(0)
                 correct += predicted.eq(targets).sum().item()
+                acc = round(100. * correct / total, 3)
 
-                self.test_loss_log.append(test_loss / (batch_idx + 1))
-                self.test_acc_log.append(100. * correct / total)
+                self.log_handle.add_log([epoch+1, batch_idx, test_loss, acc], is_train=False)
 
-                self.mb.child.comment = 'Test Loss:{:.3f}'.format(self.test_loss_log[-1])
+                self.mb.child.comment = 'Test Loss:{:.3f}'.format(test_loss)
 
                 # if (batch_idx % self.CHECKPOINT_INTERVAL == 0):
                 #     print(
@@ -122,17 +128,17 @@ class SupervisedTrainer:
         if not os.path.isdir(self.SAVE_PATH + 'checkpoint/'):
             os.mkdir(self.SAVE_PATH + 'checkpoint/')
 
-        columns = ['Epoch', 'Train Loss', 'Test Loss',
-         'Train Accuracy', 'Test Accuracy']
-        self.mb.write(columns, table=True)
+        self.mb.write(self.log_handle.get_epoch_log_cols(), table=True)
 
+        prev_time = time()
         for epoch in self.mb:
-            self.train()
+            self.train(epoch)
             self.test(epoch)
-            self.mb.write([round(i,4) for i in [epoch+1, self.train_loss_log[-1], self.test_loss_log[-1], self.train_acc_log[-1],
-                self.test_acc_log[-1]]], table=True)
-        # Display Time taken
+            self.mb.write(self.log_handle.get_epoch_log(), table=True)
 
+        # Display Time taken
+        wall_time = datetime.timedelta(seconds=(time() - prev_time))
+        print("Wall Time: {}".format(wall_time))
         # Save model on keyboard interrupt
         # except KeyboardInterrupt:
         # torch.save(net.state_dict(), 'INTERRUPTED.pth')
@@ -145,9 +151,10 @@ class SupervisedTrainer:
         # Have an option to export to ONNX format
 
     def get_logs(self):
-        return  self.train_loss_log, \
-                self.train_acc_log , \
-                self.test_loss_log, \
-                self.test_acc_log
+        return  self.log_handle.get_logs()
+
+    def save_log(self, save_path, title="Experiment_log"):
+        from numpy import save
+        save(save_path+title+".npy", self.log_handle.get_logs())
 
 
