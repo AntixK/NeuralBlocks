@@ -77,7 +77,7 @@ class ConvNorm(nn.Module):
         if conv_last:
             layers = layers[1:] + layers[:1]
             # Reinitialize the batchnorm layer or its variants
-            if norm in ['BN', 'LN', 'IN', 'GN']:
+            if norm in ['ABN', 'BN', 'LN', 'IN', 'GN']:
                 layers[0].__init__(in_channels)
 
         self.layers= nn.Sequential(*layers)

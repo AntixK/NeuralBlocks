@@ -3,7 +3,6 @@ import torch.nn as nn
 import torch.nn.functional as F
 from NeuralBlocks.blocks.denseblock import DenseBlock
 from NeuralBlocks.blocks.convnormrelupool import ConvNormReLUPool
-from NeuralBlocks.blocks.meanspectralnorm import MeanSpectralNormConv2d
 
 
 cfgs = {
@@ -50,26 +49,6 @@ class DenseNet(nn.Module):
 
         self.features.add_module('lastnorm', nn.BatchNorm2d(num_features))
         self.fc = nn.Linear(num_features, num_classes)
-        self._initialize_weights()
-
-    def _initialize_weights(self):
-        for m in self.modules():
-            if isinstance(m, nn.Conv2d):
-                nn.init.kaiming_normal_(m.weight, mode='fan_out', nonlinearity='relu')
-                if m.bias is not None:
-                    nn.init.constant_(m.bias, 0)
-            elif isinstance(m, MeanSpectralNormConv2d):
-                nn.init.kaiming_normal_(m.conv.weight, mode='fan_out', nonlinearity='relu')
-                if m.bias is not None:
-                    nn.init.constant_(m.bias, 0)
-                if m.conv.bias is not None:
-                    nn.init.constant_(m.conv.bias, 0)
-            elif isinstance(m, nn.BatchNorm2d):
-                nn.init.constant_(m.weight, 1)
-                nn.init.constant_(m.bias, 0)
-            elif isinstance(m, nn.Linear):
-                nn.init.normal_(m.weight, 0, 0.01)
-                nn.init.constant_(m.bias, 0)
 
     def forward(self, input):
         x = self.features(input)
@@ -80,7 +59,6 @@ class DenseNet(nn.Module):
 
 if __name__ == '__main__':
     input = torch.randn(16,3,32,32).cuda()
-
 
     d = DenseNet(3, 10, norm='MSN').cuda()
     with torch.autograd.profiler.profile(use_cuda=True) as prof:

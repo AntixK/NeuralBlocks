@@ -20,6 +20,11 @@ class Logger:
 
 
     def add_log(self, values, is_train = True):
+        """
+        Add values (list) to the log after each train/test
+        iteration. Th values list is of the form
+            [epoch, batch_idx (iteration), loss, metrics..]
+        """
 
         if is_train:
             assert len(self.train_log) == len(values), \

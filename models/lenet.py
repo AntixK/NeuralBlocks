@@ -5,8 +5,8 @@ from NeuralBlocks.blocks.convnormrelu import ConvNormRelu
 class LeNet(nn.Module):
     def __init__(self, in_channels, num_class, norm='BN'):
         super(LeNet, self).__init__()
-        self.conv1 = ConvNormRelu(in_channels, out_channels=20, kernel_size=5)
-        self.conv2 = ConvNormRelu(20, out_channels=50, kernel_size=5)
+        self.conv1 = ConvNormRelu(in_channels, out_channels=20, kernel_size=5, norm=norm)
+        self.conv2 = ConvNormRelu(20, out_channels=50, kernel_size=5, norm=norm)
         self.fc1 = nn.Linear(4 * 4 * 50, num_class)
 
     def forward(self, x):
