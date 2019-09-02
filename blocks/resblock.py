@@ -1,4 +1,6 @@
+import torch
 import torch.nn as nn
+from NeuralBlocks.blocks.linnormrelu import LinarNormReLU
 from NeuralBlocks.blocks.convnorm import ConvNorm
 from NeuralBlocks.blocks.convnormrelu import ConvNormRelu
 from NeuralBlocks.blocks.depthwiseconv import DepthwiseSperableConv
@@ -29,7 +31,7 @@ class ResidualBlock(nn.Module):
             output of the block. But, if the stride is > 1 or the out_channels !=
             in_channels, then there will be a size mis-match.
             To resolve this, either pad the input to the size of the layer output
-            or the more commonly used one - 1x1 convolution so that the resultant
+            or the more commonly used one - 1x1 2D-convolution so that the resultant
             sizes are the same.
         """
 
@@ -46,6 +48,46 @@ class ResidualBlock(nn.Module):
         return residual + x
 
 #=================================================================================#
+
+class LinearResidualBlock(nn.Module):
+
+    def __init__(self, in_channels, out_channels, norm='BN', bias= True, dropout_rate =0):
+        super(LinearResidualBlock, self).__init__()
+        modules= []
+        modules.append(LinarNormReLU(in_features= in_channels, out_features= out_channels, bias= bias, norm=norm))
+        modules.append(LinarNormReLU(in_features= out_channels, out_features= out_channels, bias= bias, norm=norm))
+
+        # Dropout for the residual block is used for WideResNets
+        if dropout_rate > 0:
+            modules.insert(2, nn.Dropout(p=dropout_rate))
+
+        self.layer = nn.Sequential(*modules)
+
+        """
+            For the residual part, the input is usually added to the
+            output of the block. But, if the out_channels !=
+            in_channels, then there will be a size mis-match.
+            To resolve this, we use 1x1 1D-convolution so that the resultant
+            sizes are the same.
+        """
+
+        if out_channels != in_channels:
+            self.residue = nn.Sequential(nn.Conv1d(in_channels, out_channels,
+                                                   kernel_size=1, bias=True))
+        else:
+            self.residue = nn.Sequential()
+
+
+    def forward(self, input):
+        x =  self.layer(input)
+        input = torch.unsqueeze(input, dim = 2) # add extra singleton dim for conv
+
+        residual = self.residue(input)
+        return torch.squeeze(residual) + x
+
+#=================================================================================#
+
+
 class InvertedResidualBlock(nn.Module):
     '''
     Expand + Depthwise Separable Conv(Depthwise + pointwise)
