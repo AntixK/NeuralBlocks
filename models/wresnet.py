@@ -5,7 +5,7 @@ import torch.nn.functional as F
 from NeuralBlocks.blocks.resblock import ResidualBlock
 
 class WideResNet(nn.Module):
-    def __init__(self, depth, num_classes,  widen_factor,dropout_rate = 0.2, norm='BN'):
+    def __init__(self, depth, num_classes,  widen_factor,dropout_rate = 0.2, in_channels=3,  norm='BN'):
         super(WideResNet, self).__init__()
         self.in_planes = 16
         self.norm = norm
@@ -15,7 +15,7 @@ class WideResNet(nn.Module):
         k = widen_factor
         num_stages = [16,16*k, 32*k, 32*k]
 
-        self.conv1 = nn.Conv2d(3, num_stages[0], kernel_size=3, stride=1, padding=1, bias=True)
+        self.conv1 = nn.Conv2d(in_channels, num_stages[0], kernel_size=3, stride=1, padding=1, bias=True)
         self.layer1 = self._wideLayer(num_stages[1], n,dropout_rate,stride=1)
         self.layer2 = self._wideLayer(num_stages[2], n,dropout_rate,stride=2)
         self.layer3 = self._wideLayer(num_stages[3], n,dropout_rate,stride=2)
@@ -56,6 +56,6 @@ class WideResNet(nn.Module):
 
 if __name__ == '__main__':
     net=WideResNet(depth=28, num_classes=10, dropout_rate=0.3, widen_factor=10, norm='MSN')
-    y = net(torch.randn(1,3,32,32))
+    y = net(torch.randn(1,3,32,32)) # M x C x H x W
 
     print(y.size())
