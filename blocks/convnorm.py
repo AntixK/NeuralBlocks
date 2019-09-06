@@ -1,5 +1,5 @@
 import torch.nn as nn
-from inplace_abn import ABN
+
 from NeuralBlocks.blocks.meanspectralnorm import MeanSpectralNormConv2d
 from NeuralBlocks.blocks.meanweightnorm import MeanWeightNormConv2d
 from NeuralBlocks.blocks.spectralnorm import SpectralNormConv2d
@@ -57,10 +57,15 @@ class ConvNorm(nn.Module):
                  bias, padding_mode)
             layers += [conv2d, nn.BatchNorm2d(out_channels) ]
         elif norm == 'ABN':
-            conv2d = nn.Conv2d(in_channels, out_channels, kernel_size,
-                 stride, padding, dilation, groups,
-                 bias, padding_mode)
-            layers += [conv2d, ABN(out_channels) ]
+            try:
+                from inplace_abn import ABN
+
+                conv2d = nn.Conv2d(in_channels, out_channels, kernel_size,
+                     stride, padding, dilation, groups,
+                     bias, padding_mode)
+                layers += [conv2d, ABN(out_channels) ]
+            except ImportError:
+                raise ImportError('Unable to import implace_abn')
         else:
             conv2d = nn.Conv2d(in_channels, out_channels, kernel_size,
                                stride, padding, dilation, groups,

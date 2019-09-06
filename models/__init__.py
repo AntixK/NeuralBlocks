@@ -7,3 +7,4 @@ from NeuralBlocks.models.vgg import *
 from NeuralBlocks.models.resnet import *
 from NeuralBlocks.models.wresnet import *
 from NeuralBlocks.models.segnet import *
+from NeuralBlocks.models.linresnet import *

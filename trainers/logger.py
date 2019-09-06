@@ -11,12 +11,13 @@ class Logger:
                                     ('Batch_idx',[]),
                                     ('Test_loss',[])])
 
-        if not isinstance(metrics, list):
-            raise ValueError("metrics must be a list.")
+        if metrics is not None:
+            if not isinstance(metrics, list):
+                raise ValueError("metrics must be a list.")
 
-        for m in metrics:
-            self.train_log['Train_'+m] = []
-            self.test_log['Test_'+m] = []
+            for m in metrics:
+                self.train_log['Train_'+m] = []
+                self.test_log['Test_'+m] = []
 
 
     def add_log(self, values, is_train = True):
@@ -42,7 +43,11 @@ class Logger:
                 self.test_log[key].append(values[i])
 
     def get_logs(self):
-        "Returns a dict of both train and test logs"
+        """
+        Returns a dict of both train and test logs
+        :return:
+        """
+
         return {'Train_log':self.train_log,
                 'Test_log':self.test_log}
 
@@ -71,10 +76,16 @@ class Logger:
         temp_list = []
         for key, val in self.train_log.items():
             if key != 'Batch_idx':
-                temp_list.append(val[-1])
+                if val == []:
+                    temp_list.append('[]')
+                else:
+                    temp_list.append(val[-1])
 
         for key, val in self.test_log.items():
             if key not in ['Epoch', 'Batch_idx']:
-                temp_list.append(val[-1])
+                if val == []:
+                    temp_list.append('[]')
+                else:
+                    temp_list.append(val[-1])
 
         return temp_list

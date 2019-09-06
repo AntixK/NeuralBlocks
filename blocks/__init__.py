@@ -9,3 +9,5 @@ from NeuralBlocks.blocks.linnormrelu import *
 from NeuralBlocks.blocks.meanspectralnorm import *
 from NeuralBlocks.blocks.meanweightnorm import *
 from NeuralBlocks.blocks.transconvnormrelu import *
+from NeuralBlocks.blocks.linnorm import *
+from NeuralBlocks.blocks.resblock import *
