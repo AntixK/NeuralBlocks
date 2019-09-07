@@ -1,18 +1,32 @@
 import torch
-import os
-from time import time
-import datetime
+from NeuralBlocks.trainers import Trainer
 import NeuralBlocks.trainers.metrics as M
+from fastprogress import  progress_bar
 from NeuralBlocks.trainers.logger import Logger
-from fastprogress import master_bar, progress_bar
 
-_metrics_ = ['accuracy','precision','recall','RMSE','MSE','MSE',
-             'F1_score','top_3_accuracy', 'top_5_accuracy']
+_metrics_ = ['accuracy', 'precision', 'recall', 'RMSE', 'MSE', 'MSE',
+             'F1_score', 'top_3_accuracy', 'top_5_accuracy']
 
 
-class SupervisedTrainer():
-    def __init__(self, model, data_bunch, optimizer, loss_function, metrics=['accuracy'], use_cuda = True):
+class SupervisedTrainer(Trainer):
+    def __init__(self, model, data_bunch, optimizer, loss_function, metrics=None, use_cuda = True):
+        """
+        Trainer class for supervised DNN training - can be used for both Regression
+        and Classification.
 
+        :param model: model object derived from the nn.Module class
+        :param data_bunch: List of train and test loaders
+        :param optimizer: Optimiser object from torch.optim
+        :param loss_function: Objective function to optimize
+        :param metrics: Metrics to keep track during training.
+                        Refer _metrics_ for the list of available metrics
+        :param use_cuda: Boolean to use cuda if available
+        """
+
+        if metrics is None:
+            metrics = ['accuracy']
+
+        super(SupervisedTrainer, self).__init__(use_cuda, metrics)
         self.model = model
         self.trainloader = data_bunch[0]
         self.testloader = data_bunch[1]
@@ -20,19 +34,13 @@ class SupervisedTrainer():
         self.optimizer = optimizer
         self.criterion = loss_function
         self.CHECKPOINT_INTERVAL = 100
-        self.NUM_EPOCH = 0
-        self.mb = master_bar(range(self.NUM_EPOCH))
 
         if self.use_cuda:
             self.model = self.model.cuda()
 
-        if torch.cuda.is_available() and not self.use_cuda:
-            raise Warning("CUDA is available on this machine. "
-                                 "Set use_cuda = True for faster computation.")
-
         self.best_loss = float('Inf')
-        self.log_handle = Logger(metrics=metrics)
         self.metrics = metrics
+        self.log_handle = Logger(metrics=metrics, losses=True)
 
     def train(self, epoch):
         self.model.train()
@@ -98,32 +106,6 @@ class SupervisedTrainer():
             torch.save(state, self.SAVE_PATH + 'checkpoint/ckpt.pth')
             self.best_loss = test_loss
 
-    def run(self, num_epochs, model_save_path = None):
-        self.NUM_EPOCH = num_epochs
-        self.mb = master_bar(range(self.NUM_EPOCH))
-
-        if model_save_path is None:
-            self.SAVE_PATH = os.getcwd()+'/Results/'
-        else:
-            self.SAVE_PATH = model_save_path
-
-        if not os.path.isdir(self.SAVE_PATH):
-            os.mkdir(self.SAVE_PATH)
-
-        if not os.path.isdir(self.SAVE_PATH + 'checkpoint/'):
-            os.mkdir(self.SAVE_PATH + 'checkpoint/')
-
-        self.mb.write(self.log_handle.get_epoch_log_cols(), table=True)
-
-        prev_time = time()
-        for epoch in self.mb:
-            self.train(epoch)
-            self.test(epoch)
-            self.mb.write(self.log_handle.get_epoch_log(), table=True)
-
-        # Display Time taken
-        wall_time = datetime.timedelta(seconds=(time() - prev_time))
-        print("Wall Time: {}".format(wall_time))
         # Save model on keyboard interrupt
         # except KeyboardInterrupt:
         # torch.save(net.state_dict(), 'INTERRUPTED.pth')
@@ -134,10 +116,3 @@ class SupervisedTrainer():
         #     os._exit(0)
 
         # Have an option to export to ONNX format
-
-    def get_logs(self):
-        return self.log_handle.get_logs()
-
-    def save_log(self, save_path, title="Experiment_log"):
-        from numpy import save
-        save(save_path+title+".npy", self.log_handle.get_logs())

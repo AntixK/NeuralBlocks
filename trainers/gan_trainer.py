@@ -1,6 +1,8 @@
 import torch
 from NeuralBlocks.trainers import Trainer
 from fastprogress import progress_bar
+from NeuralBlocks.trainers.ganloss import GANLoss
+from NeuralBlocks.trainers.logger import Logger
 
 
 class GANTrainer(Trainer):
@@ -16,6 +18,11 @@ class GANTrainer(Trainer):
         self.Generator = G_model
         self.Discriminator = D_model
         self.dataloader = dataloader
+
+        if not isinstance(gan_loss, GANLoss):
+            raise ValueError("gan_loss must be an object of the GANLoss class")
+
+
         self.Gan_loss = gan_loss
         self.z_dim = latent_dim
         self.G_optimizer = G_optimizer
@@ -24,6 +31,8 @@ class GANTrainer(Trainer):
         if self.use_cuda:
             self.Generator.cuda()
             self.Discriminator.cuda()
+
+        self.log_handle = Logger(metrics=None, losses=['G(x)', 'D(G(x))'])
 
     def train(self, epoch):
         """
@@ -53,6 +62,7 @@ class GANTrainer(Trainer):
 
             G_x = self.Generator(z)
             D_G_x = self.Discriminator(G_x)
+
             D_x = self.Discriminator(real_images)
 
             self.D_optimizer.zero_grad()
@@ -73,4 +83,5 @@ class GANTrainer(Trainer):
 
     def generate_samples(self):
         pass
+
 

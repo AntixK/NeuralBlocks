@@ -1,15 +1,22 @@
 from collections import OrderedDict
 
 class Logger:
-    def __init__(self, metrics=['accuracy']):
+    def __init__(self, metrics, losses):
         self.train_log = OrderedDict([
                                     ('Epoch',[]),
-                                    ('Batch_idx',[]),
-                                    ('Train_loss',[])])
+                                    ('Batch_idx',[])])
         self.test_log = OrderedDict([
                                     ('Epoch',[]),
-                                    ('Batch_idx',[]),
-                                    ('Test_loss',[])])
+                                    ('Batch_idx',[])])
+
+        if losses is True or None:
+            self.train_log['Train_loss'] = []
+            self.test_log['Test_loss'] = []
+        elif isinstance(losses, list):
+            for l in losses:
+                self.train_log['Train_' + l] = []
+                self.test_log['Test_' + l] = []
+
 
         if metrics is not None:
             if not isinstance(metrics, list):

@@ -15,6 +15,9 @@ class A(ABC):
     def s(self):
         pass
 
+    def __call__(self):
+        print("Yo!")
+
 
 class B(A):
     def baba(self):
@@ -30,4 +33,5 @@ class B(A):
 b = B()
 b.baba()
 b.black("sheep")
+b()
 # b.sheep()
