@@ -9,6 +9,7 @@
 [![contrib-image]][contrib-url]
 [![twitter-image]][twitter-url]
 
+**Note**- If you wish to use Mean Spectral Normalization (MSN), check out the `notebooks` folder.
 ### :checkered_flag:  Getting Started
 
 ### :hammer: Requirements
